@@ -1,5 +1,5 @@
-pub mod run;
-mod ort_vad;
+pub mod exposure;
+pub mod ort_vad;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right

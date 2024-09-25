@@ -3,6 +3,12 @@ name = "rust_vad"
 version = "0.1.0"
 edition = "2021"
 
+
+[lib]
+crate-type = ['cdylib']
+
 [dependencies]
-ort = "2.0.0-rc.5"
-tch = "0.17.0"
+ort = {version = "=2.0.0-rc.5", features = ["ndarray"]}
+ndarray = "0.16"
+hound = "3"
+jni = "0.21.1"
