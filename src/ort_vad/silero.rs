@@ -1,6 +1,7 @@
 use crate::ort_vad::utils;
 use ndarray::{s, Array, Array2, ArrayBase, ArrayD, Dim, IxDynImpl, OwnedRepr};
 use std::path::Path;
+use std::fs;
 
 #[derive(Debug)]
 pub struct Silero {
@@ -14,7 +15,14 @@ impl Silero {
         sample_rate: utils::SampleRate,
         model_path: impl AsRef<Path>,
     ) -> Result<Self, ort::Error> {
-        let session = ort::Session::builder()?.commit_from_file(model_path)?;
+        let session = if model_path.as_ref().exists() {
+            ort::Session::builder()?.commit_from_file(model_path)?
+        } else {
+            // If the file doesn't exist, use the bytes from model.rs
+            let model_bytes = crate::exposure::model::get_model();
+            ort::Session::builder()?.commit_from_memory(model_bytes)?
+        };
+
         let state = ArrayD::<f32>::zeros([2, 1, 128].as_slice());
         let sample_rate = Array::from_shape_vec([1], vec![sample_rate.into()]).unwrap();
         Ok(Self {

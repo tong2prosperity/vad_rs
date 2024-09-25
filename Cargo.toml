@@ -12,3 +12,4 @@ ort = {version = "=2.0.0-rc.5", features = ["ndarray"]}
 ndarray = "0.16"
 hound = "3"
 jni = "0.21.1"
+lazy_static = "1.5.0"
