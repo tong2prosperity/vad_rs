@@ -20,7 +20,7 @@ pub fn process_audio(audio_i16: &[i16]) -> f32 {
     if audio_i16.is_empty() {
         return -1.0;
     }
-    if audio_i16.len() <  {
+    if audio_i16.len() < 512 {
         return -1.0;
     }
 
