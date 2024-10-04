@@ -30,9 +30,7 @@ pub fn process_audio(audio_i16: &[i16]) -> f32 {
     if let Some(ref mut silero) = *instance {
         match silero.calc_level(audio_i16) {
             Ok(level) => {
-                if level > 0.01 {
-                    return 1.0;
-                }
+                return level;
             }
             Err(_) => {
                 // 处理错误
