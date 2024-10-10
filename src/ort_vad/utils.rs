@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy)]
 pub enum SampleRate {
     EightkHz,
@@ -22,7 +23,8 @@ impl From<SampleRate> for usize {
     }
 }
 
-#[derive(Debug)]
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct VadParams {
     pub frame_size: usize,
     pub threshold: f32,

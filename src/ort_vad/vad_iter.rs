@@ -8,6 +8,14 @@ pub struct VadIter {
     state: State,
 }
 
+#[derive(Debug)]
+pub enum VadState {
+    Silence,
+    Start,
+    Speaking,
+    End,
+}
+
 impl VadIter {
     pub fn new(silero: silero::Silero, params: utils::VadParams) -> Self {
         Self {
@@ -17,14 +25,20 @@ impl VadIter {
         }
     }
 
-    pub fn process(&mut self, samples: &[i16]) -> Result<(), ort::Error> {
-        self.reset_states();
+    pub fn process(&mut self, samples: &[i16]) -> Result<VadState, ort::Error> {
+        //self.reset_states();
         for audio_frame in samples.chunks_exact(self.params.frame_size_samples) {
             let speech_prob: f32 = self.silero.calc_level(audio_frame)?;
             self.state.update(&self.params, speech_prob);
         }
         self.state.check_for_last_speech(samples.len());
-        Ok(())
+        if self.state.current_speech.start == 0 { 
+            Ok(VadState::Silence)
+        } else if self.state.current_speech.end == 0 {
+            Ok(VadState::Speaking)
+        } else {
+            Ok(VadState::End)
+        }
     }
 
     pub fn speeches(&self) -> &[utils::TimeStamp] {
@@ -95,8 +109,15 @@ impl From<utils::VadParams> for Params {
     }
 }
 
+impl Default for VadState {
+    fn default() -> Self {
+        VadState::Silence
+    }
+}
+
 #[derive(Debug, Default)]
 struct State {
+    res: VadState,
     current_sample: usize,
     temp_end: usize,
     next_start: usize,
@@ -124,9 +145,12 @@ impl State {
             }
             if !self.triggered {
                 self.debug(speech_prob, params, "start");
+                self.res = VadState::Start;
                 self.triggered = true;
                 self.current_speech.start =
                     self.current_sample as i64 - params.frame_size_samples as i64;
+            }else {
+                self.res = VadState::Speaking;
             }
             return;
         }
@@ -157,8 +181,10 @@ impl State {
         }
         if speech_prob >= (params.threshold - 0.15) && (speech_prob < params.threshold) {
             if self.triggered {
+                self.res = VadState::Speaking;
                 self.debug(speech_prob, params, "speaking")
             } else {
+                self.res = VadState::Silence;
                 self.debug(speech_prob, params, "silence")
             }
         }
@@ -182,8 +208,16 @@ impl State {
                     self.next_start = 0;
                     self.temp_end = 0;
                     self.triggered = false;
+                    self.res = VadState::End;
+                }else {
+                    self.res = VadState::Speaking;
                 }
             }
+            return
+        }
+
+        if !self.triggered {
+            self.res = VadState::Silence;
         }
     }
 

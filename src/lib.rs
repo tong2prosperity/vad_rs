@@ -4,6 +4,7 @@ pub mod util;
 
 use crate::exposure::{init_silero, process_audio};
 
+use exposure::init_vad_iter;
 #[cfg(target_os = "android")]
 use jni::objects::{JByteArray, JClass};
 #[cfg(target_os = "android")]
@@ -11,6 +12,7 @@ use jni::JNIEnv;
 #[cfg(target_os = "android")]
 use jni::sys::{jfloat, jlong};
 
+use std::ffi::{c_ulong, c_char};
 #[cfg(any(target_os = "ios", target_os = "macos"))]
 use std::os::raw::{c_float, c_void};
 
@@ -43,6 +45,23 @@ pub extern "C" fn process_audio_apple(audio_data: *const i16, audio_len: usize) 
     let audio_slice = unsafe { std::slice::from_raw_parts(audio_data, audio_len) };
     process_audio(audio_slice) as c_float
 }
+
+#[cfg(any(target_os = "ios", target_os = "macos"))]
+#[no_mangle]
+pub extern "C" fn init_vad_iter_apple(param_str: *const c_char) -> c_ulong {
+    let param_str = unsafe { std::ffi::CStr::from_ptr(param_str) }.to_string_lossy().into_owned();
+    init_vad_iter(&param_str) as c_ulong
+}
+
+#[cfg(any(target_os = "ios", target_os = "macos"))]
+#[no_mangle]
+pub extern "C" fn process_vad_iter_apple(handle: c_ulong, audio_data: *const i16, audio_len: usize) -> c_float {
+    let handle = handle as usize;
+    let audio_slice = unsafe { std::slice::from_raw_parts(audio_data, audio_len) };
+    process_vad_iter(handle, audio_slice)
+}
+
+
 
 #[cfg(test)]
 mod tests {

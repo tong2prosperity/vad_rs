@@ -11,6 +11,12 @@ pub struct Silero {
 }
 
 impl Silero {
+    // there should be two new function once for macos/ios and one for linux/android
+    // the function should be named new_for_macos and new_for_linux
+    // use target_os to determine the platform
+    // for macos/ios, the function should load the model from the bundle
+    // for linux/android, the function should load the model from the asset manager
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     pub fn new(
         sample_rate: utils::SampleRate,
         model_path: impl AsRef<Path>,
@@ -19,8 +25,11 @@ impl Silero {
             ort::Session::builder()?.commit_from_file(model_path)?
         } else {
             // If the file doesn't exist, use the bytes from model.rs
+            let providers = vec![ort::CoreMLExecutionProvider::default().with_subgraphs().with_ane_only().build()];
             let model_bytes = crate::exposure::model::get_model();
-            ort::Session::builder()?.commit_from_memory(model_bytes)?
+            ort::Session::builder()?
+            .with_execution_providers(providers)?
+            .commit_from_memory(model_bytes)?
         };
 
         let state = ArrayD::<f32>::zeros([2, 1, 128].as_slice());
@@ -31,6 +40,30 @@ impl Silero {
             state,
         })
     }
+
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    pub fn new(
+        sample_rate: utils::SampleRate,
+        model_path: impl AsRef<Path>,
+    ) -> Result<Self, ort::Error> {
+        let session = if model_path.as_ref().exists() {
+            ort::Session::builder()?.commit_from_file(model_path)?
+        } else {
+            let providers = vec![ort::ExecutionProviderDispatch::CpuExecutionProvider(ort::NNAPIExecutionProvider::default().build())];
+            let model_bytes = crate::exposure::model::get_model();
+            ort::Session::builder()?
+            .with_execution_providers(providers)?
+            .commit_from_memory(model_bytes)?
+        };
+        let state = ArrayD::<f32>::zeros([2, 1, 128].as_slice());
+        let sample_rate = Array::from_shape_vec([1], vec![sample_rate.into()]).unwrap();
+        Ok(Self {
+            session,
+            sample_rate,
+            state,
+        })
+    }
+    
 
     pub fn reset(&mut self) {
         self.state = ArrayD::<f32>::zeros([2, 1, 128].as_slice());
