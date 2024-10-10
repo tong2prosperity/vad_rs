@@ -2,9 +2,9 @@ pub mod exposure;
 pub mod ort_vad;
 pub mod util;
 
-use crate::exposure::{init_silero, process_audio};
+use crate::exposure::{init_silero, process_audio, VadRes, init_vad_iter, process_vad_iter};
+use std::ffi::c_long;
 
-use exposure::init_vad_iter;
 #[cfg(target_os = "android")]
 use jni::objects::{JByteArray, JClass};
 #[cfg(target_os = "android")]
@@ -48,17 +48,28 @@ pub extern "C" fn process_audio_apple(audio_data: *const i16, audio_len: usize) 
 
 #[cfg(any(target_os = "ios", target_os = "macos"))]
 #[no_mangle]
-pub extern "C" fn init_vad_iter_apple(param_str: *const c_char) -> c_ulong {
+pub extern "C" fn init_vad_iter_apple(param_str: *const c_char) -> c_long {
+    
+
     let param_str = unsafe { std::ffi::CStr::from_ptr(param_str) }.to_string_lossy().into_owned();
-    init_vad_iter(&param_str) as c_ulong
+    init_vad_iter(&param_str) 
 }
 
 #[cfg(any(target_os = "ios", target_os = "macos"))]
 #[no_mangle]
-pub extern "C" fn process_vad_iter_apple(handle: c_ulong, audio_data: *const i16, audio_len: usize) -> c_float {
-    let handle = handle as usize;
+pub extern "C" fn process_vad_iter_apple(handle: c_long, audio_data: *const i16, audio_len: usize) -> VadRes {
+
     let audio_slice = unsafe { std::slice::from_raw_parts(audio_data, audio_len) };
     process_vad_iter(handle, audio_slice)
+}
+
+#[cfg(any(target_os = "ios", target_os = "macos"))]
+#[no_mangle]
+pub extern "C" fn cleanup_vad_iter_apple(handle: c_long) {
+    use exposure::cleanup_vad_iter;
+
+    
+    cleanup_vad_iter(handle);
 }
 
 

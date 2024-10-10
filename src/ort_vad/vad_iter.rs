@@ -1,6 +1,6 @@
 use crate::ort_vad::{silero, utils};
 
-const DEBUG_SPEECH_PROB: bool = true;
+const DEBUG_SPEECH_PROB: bool = false;
 #[derive(Debug)]
 pub struct VadIter {
     silero: silero::Silero,
@@ -8,7 +8,7 @@ pub struct VadIter {
     state: State,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum VadState {
     Silence,
     Start,
@@ -27,18 +27,19 @@ impl VadIter {
 
     pub fn process(&mut self, samples: &[i16]) -> Result<VadState, ort::Error> {
         //self.reset_states();
-        for audio_frame in samples.chunks_exact(self.params.frame_size_samples) {
-            let speech_prob: f32 = self.silero.calc_level(audio_frame)?;
+        //for audio_frame in samples.chunks_exact(self.params.frame_size_samples) {
+            let speech_prob: f32 = self.silero.calc_level(samples)?;
             self.state.update(&self.params, speech_prob);
-        }
-        self.state.check_for_last_speech(samples.len());
-        if self.state.current_speech.start == 0 { 
-            Ok(VadState::Silence)
-        } else if self.state.current_speech.end == 0 {
-            Ok(VadState::Speaking)
-        } else {
-            Ok(VadState::End)
-        }
+        //}
+        Ok(self.state.res)
+        // self.state.check_for_last_speech(samples.len());
+        // if self.state.current_speech.start == 0 { 
+        //     Ok(VadState::Silence)
+        // } else if self.state.current_speech.end == 0 {
+        //     Ok(VadState::Speaking)
+        // } else {
+        //     Ok(VadState::End)
+        // }
     }
 
     pub fn speeches(&self) -> &[utils::TimeStamp] {
@@ -252,6 +253,96 @@ impl State {
                 speech_prob,
                 self.current_sample - params.frame_size_samples,
             );
+        }
+    }
+}
+
+impl State {
+    fn update2(&mut self, params: &Params, speech_prob: f32) {
+        self.current_sample += params.frame_size_samples;
+
+        if speech_prob > params.threshold {
+            self.handle_speech_start(params, speech_prob);
+        } else if self.triggered && (self.current_sample as i64 - self.current_speech.start) as f32 > params.max_speech_samples {
+            self.handle_speech_end(params);
+        } else if speech_prob >= (params.threshold - 0.15) && speech_prob < params.threshold {
+            self.handle_speaking_or_silence(speech_prob, params);
+        } else if self.triggered && speech_prob < (params.threshold - 0.15) {
+            self.handle_speech_end_with_silence(params, speech_prob);
+        } else if !self.triggered {
+            self.res = VadState::Silence;
+        }
+    }
+
+    fn handle_speech_start(&mut self, params: &Params, speech_prob: f32) {
+        if self.temp_end != 0 {
+            self.temp_end = 0;
+            if self.next_start < self.prev_end {
+                self.next_start = self.current_sample.saturating_sub(params.frame_size_samples);
+            }
+        }
+        if !self.triggered {
+            self.debug(speech_prob, params, "start");
+            self.res = VadState::Start;
+            self.triggered = true;
+            self.current_speech.start = self.current_sample as i64 - params.frame_size_samples as i64;
+        } else {
+            self.res = VadState::Speaking;
+        }
+    }
+
+    fn handle_speech_end(&mut self, params: &Params) {
+        if self.prev_end > 0 {
+            self.current_speech.end = self.prev_end as _;
+            self.take_speech();
+            if self.next_start < self.prev_end {
+                self.triggered = false;
+            } else {
+                self.current_speech.start = self.next_start as _;
+            }
+            self.prev_end = 0;
+            self.next_start = 0;
+            self.temp_end = 0;
+        } else {
+            self.current_speech.end = self.current_sample as _;
+            self.take_speech();
+            self.prev_end = 0;
+            self.next_start = 0;
+            self.temp_end = 0;
+            self.triggered = false;
+        }
+    }
+
+    fn handle_speaking_or_silence(&mut self, speech_prob: f32, params: &Params) {
+        if self.triggered {
+            self.res = VadState::Speaking;
+            self.debug(speech_prob, params, "speaking");
+        } else {
+            self.res = VadState::Silence;
+            self.debug(speech_prob, params, "silence");
+        }
+    }
+
+    fn handle_speech_end_with_silence(&mut self, params: &Params, speech_prob: f32) {
+        self.debug(speech_prob, params, "end");
+        if self.temp_end == 0 {
+            self.temp_end = self.current_sample;
+        }
+        if self.current_sample.saturating_sub(self.temp_end) > params.min_silence_samples_at_max_speech {
+            self.prev_end = self.temp_end;
+        }
+        if self.current_sample.saturating_sub(self.temp_end) >= params.min_silence_samples {
+            self.current_speech.end = self.temp_end as _;
+            if self.current_speech.end - self.current_speech.start > params.min_speech_samples as _ {
+                self.take_speech();
+                self.prev_end = 0;
+                self.next_start = 0;
+                self.temp_end = 0;
+                self.triggered = false;
+                self.res = VadState::End;
+            } else {
+                self.res = VadState::Speaking;
+            }
         }
     }
 }
