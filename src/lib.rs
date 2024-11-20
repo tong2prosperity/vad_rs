@@ -58,6 +58,7 @@ pub extern "C" fn init_vad_iter_apple(param_str: *const c_char) -> c_long {
 #[cfg(any(target_os = "ios", target_os = "macos"))]
 #[no_mangle]
 pub extern "C" fn process_vad_iter_apple(handle: c_long, audio_data: *const i16, audio_len: usize) -> VadRes {
+    // check the audio length, the sample rate is 24000, so the length should be 24000 * 0.02 = 480
 
     let audio_slice = unsafe { std::slice::from_raw_parts(audio_data, audio_len) };
     process_vad_iter(handle, audio_slice)

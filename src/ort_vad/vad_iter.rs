@@ -4,11 +4,11 @@ const DEBUG_SPEECH_PROB: bool = false;
 #[derive(Debug)]
 pub struct VadIter {
     silero: silero::Silero,
-    params: Params,
+    pub params: Params,
     state: State,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum VadState {
     Silence,
     Start,
@@ -32,14 +32,6 @@ impl VadIter {
             self.state.update(&self.params, speech_prob);
         //}
         Ok(self.state.res)
-        // self.state.check_for_last_speech(samples.len());
-        // if self.state.current_speech.start == 0 { 
-        //     Ok(VadState::Silence)
-        // } else if self.state.current_speech.end == 0 {
-        //     Ok(VadState::Speaking)
-        // } else {
-        //     Ok(VadState::End)
-        // }
     }
 
     pub fn speeches(&self) -> &[utils::TimeStamp] {
@@ -56,7 +48,7 @@ impl VadIter {
 
 #[allow(unused)]
 #[derive(Debug)]
-struct Params {
+pub struct Params {
     frame_size: usize,
     threshold: f32,
     min_silence_duration_ms: usize,
@@ -65,7 +57,7 @@ struct Params {
     max_speech_duration_s: f32,
     sample_rate: usize,
     sr_per_ms: usize,
-    frame_size_samples: usize,
+    pub frame_size_samples: usize,
     min_speech_samples: usize,
     speech_pad_samples: usize,
     max_speech_samples: f32,
