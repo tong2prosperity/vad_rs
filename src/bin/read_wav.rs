@@ -6,7 +6,7 @@ fn main() {
     //     .unwrap_or_else(|_| String::from("./model/silero_vad.onnx"));
     let audio_path = std::env::args()
         .nth(1)
-        .unwrap_or_else(|| String::from("recorder.wav"));
+        .unwrap_or_else(|| String::from("/Users/nixi/Documents/kimi_audio/audio_file/dingding16k.wav"));
     let mut wav_reader = hound::WavReader::open(audio_path).unwrap();
     let sample_rate = match wav_reader.spec().sample_rate {
         8000 => utils::SampleRate::EightkHz,

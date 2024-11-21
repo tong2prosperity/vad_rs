@@ -1,11 +1,14 @@
 use crate::ort_vad::{silero, utils};
 
+use super::speech_state::StreamState;
+
 const DEBUG_SPEECH_PROB: bool = false;
 #[derive(Debug)]
 pub struct VadIter {
     silero: silero::Silero,
     pub params: Params,
     state: State,
+    stream_state: StreamState,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -18,19 +21,21 @@ pub enum VadState {
 
 impl VadIter {
     pub fn new(silero: silero::Silero, params: utils::VadParams) -> Self {
+        let p = Params::from(params);
+        let s_state =  StreamState::new(&p);
         Self {
             silero,
-            params: Params::from(params),
+            params: p,
             state: State::new(),
+            stream_state: s_state
         }
     }
 
     pub fn process(&mut self, samples: &[i16]) -> Result<VadState, ort::Error> {
-        //self.reset_states();
-        //for audio_frame in samples.chunks_exact(self.params.frame_size_samples) {
             let speech_prob: f32 = self.silero.calc_level(samples)?;
+            self.stream_state.update(&self.params, speech_prob);
             self.state.update(&self.params, speech_prob);
-        //}
+        
         Ok(self.state.res)
     }
 
@@ -49,20 +54,20 @@ impl VadIter {
 #[allow(unused)]
 #[derive(Debug)]
 pub struct Params {
-    frame_size: usize,
-    threshold: f32,
-    min_silence_duration_ms: usize,
-    speech_pad_ms: usize,
-    min_speech_duration_ms: usize,
-    max_speech_duration_s: f32,
-    sample_rate: usize,
-    sr_per_ms: usize,
+    pub frame_size: usize,
+    pub speech_threshold: f32,
+    pub min_silence_duration_ms: usize,
+    pub speech_pad_ms: usize,
+    pub min_speech_duration_ms: usize,
+    pub max_speech_duration_s: f32,
+    pub sample_rate: usize,
+    pub sr_per_ms: usize,
     pub frame_size_samples: usize,
-    min_speech_samples: usize,
-    speech_pad_samples: usize,
-    max_speech_samples: f32,
-    min_silence_samples: usize,
-    min_silence_samples_at_max_speech: usize,
+    pub min_speech_samples: usize,
+    pub speech_pad_samples: usize,
+    pub max_speech_samples: f32,
+    pub min_silence_samples: usize,
+    pub min_silence_samples_at_max_speech: usize,
 }
 
 impl From<utils::VadParams> for Params {
@@ -85,7 +90,7 @@ impl From<utils::VadParams> for Params {
         let min_silence_samples_at_max_speech = sr_per_ms * 98;
         Self {
             frame_size,
-            threshold,
+            speech_threshold: threshold,
             min_silence_duration_ms,
             speech_pad_ms,
             min_speech_duration_ms,
@@ -127,7 +132,7 @@ impl State {
 
     fn update(&mut self, params: &Params, speech_prob: f32) {
         self.current_sample += params.frame_size_samples;
-        if speech_prob > params.threshold {
+        if speech_prob > params.speech_threshold {
             if self.temp_end != 0 {
                 self.temp_end = 0;
                 if self.next_start < self.prev_end {
@@ -172,7 +177,7 @@ impl State {
             }
             return;
         }
-        if speech_prob >= (params.threshold - 0.15) && (speech_prob < params.threshold) {
+        if speech_prob >= (params.speech_threshold - 0.15) && (speech_prob < params.speech_threshold) {
             if self.triggered {
                 self.res = VadState::Speaking;
                 self.debug(speech_prob, params, "speaking")
@@ -181,7 +186,7 @@ impl State {
                 self.debug(speech_prob, params, "silence")
             }
         }
-        if self.triggered && speech_prob < (params.threshold - 0.15) {
+        if self.triggered && speech_prob < (params.speech_threshold - 0.15) {
             self.debug(speech_prob, params, "end");
             if self.temp_end == 0 {
                 self.temp_end = self.current_sample;
@@ -253,13 +258,13 @@ impl State {
     fn update2(&mut self, params: &Params, speech_prob: f32) {
         self.current_sample += params.frame_size_samples;
 
-        if speech_prob > params.threshold {
+        if speech_prob > params.speech_threshold {
             self.handle_speech_start(params, speech_prob);
         } else if self.triggered && (self.current_sample as i64 - self.current_speech.start) as f32 > params.max_speech_samples {
             self.handle_speech_end(params);
-        } else if speech_prob >= (params.threshold - 0.15) && speech_prob < params.threshold {
+        } else if speech_prob >= (params.speech_threshold - 0.15) && speech_prob < params.speech_threshold {
             self.handle_speaking_or_silence(speech_prob, params);
-        } else if self.triggered && speech_prob < (params.threshold - 0.15) {
+        } else if self.triggered && speech_prob < (params.speech_threshold - 0.15) {
             self.handle_speech_end_with_silence(params, speech_prob);
         } else if !self.triggered {
             self.res = VadState::Silence;
