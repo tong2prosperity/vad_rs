@@ -1,5 +1,7 @@
 use crate::ort_vad::utils;
+use anyhow::anyhow;
 use ndarray::{s, Array, Array2, ArrayBase, ArrayD, Dim, IxDynImpl, OwnedRepr};
+use std::error::Error;
 use std::path::Path;
 use std::fs;
 
@@ -10,6 +12,8 @@ pub struct Silero {
     state: ArrayBase<OwnedRepr<f32>, Dim<IxDynImpl>>,
 }
 
+
+// only support the 32ms frame size
 impl Silero {
     // there should be two new function once for macos/ios and one for linux/android
     // the function should be named new_for_macos and new_for_linux
@@ -31,8 +35,9 @@ impl Silero {
             .with_execution_providers(providers)?
             .commit_from_memory(model_bytes)?
         };
-
-        let state = ArrayD::<f32>::zeros([2, 1, 128].as_slice());
+        // currently no support for batch
+        const BATCH: usize = 1;
+        let state = ArrayD::<f32>::zeros([2, BATCH, 128].as_slice());
         let sample_rate = Array::from_shape_vec([1], vec![sample_rate.into()]).unwrap();
         Ok(Self {
             session,
@@ -69,7 +74,11 @@ impl Silero {
         self.state = ArrayD::<f32>::zeros([2, 1, 128].as_slice());
     }
 
-    pub fn calc_level(&mut self, audio_frame: &[i16]) -> Result<f32, ort::Error> {
+    pub fn calc_level(&mut self, audio_frame: &[i16]) -> Result<f32, anyhow::Error> {
+        if audio_frame.len() != 512 {
+            return Err(anyhow!("Invalid frame size"));
+        }
+
         let data = audio_frame
             .iter()
             .map(|x| (*x as f32) / (i16::MAX as f32))
@@ -84,10 +93,10 @@ impl Silero {
         let res = self
             .session
             .run(ort::SessionInputs::ValueSlice::<3>(&inps))?;
-        self.state = res["stateN"].try_extract_tensor().unwrap().to_owned();
+        self.state = res["stateN"].try_extract_tensor()?.to_owned();
         Ok(*res["output"]
             .try_extract_raw_tensor::<f32>()
-            .unwrap()
+            ?
             .1
             .first()
             .unwrap())

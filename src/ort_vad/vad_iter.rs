@@ -31,7 +31,7 @@ impl VadIter {
         }
     }
 
-    pub fn process(&mut self, samples: &[i16]) -> Result<SpeechState, ort::Error> {
+    pub fn process(&mut self, samples: &[i16]) -> Result<SpeechState, anyhow::Error> {
         let speech_prob: f32 = self.silero.calc_level(samples)?;
         let state = self.stream_state.update(&self.params, speech_prob);
         Ok(state)

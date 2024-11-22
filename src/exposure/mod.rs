@@ -73,6 +73,7 @@ pub fn process_vad_iter(handle: c_long, samples: &[i16]) -> VadRes {
             }
             Err(e) => {
                 res.err_code = -2;
+                debug!("Error processing VadIter: {}", e);
                 //res.msg = e.to_string();
             }
         }
