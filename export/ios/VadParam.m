@@ -5,13 +5,13 @@
 
 - (NSString *)Vad2Json {
     NSDictionary *paramsDict = @{
-        @"frame_size": @(self.frameSize),
+        @"frame_size": @(self.frame_size),
         @"threshold": @(self.threshold),
-        @"min_silence_duration_ms": @(self.minSilenceDurationMs),
-        @"speech_pad_ms": @(self.speechPadMs),
-        @"min_speech_duration_ms": @(self.minSpeechDurationMs),
-        @"max_speech_duration_s": @(self.maxSpeechDurationS),
-        @"sample_rate": @(self.sampleRate)
+        @"silence_stop_ms": @(self.silence_stop_ms),
+        @"max_speech_duration_s": @(self.max_speech_duration_s),
+        @"sample_rate": @(self.sample_rate),
+        @"pre_speech_threshold_frame_cnt": @(self.pre_speech_threshold_frame_cnt),
+        @"speech_threshold_frame_cnt": @(self.speech_threshold_frame_cnt)
     };
 
     NSError *error;

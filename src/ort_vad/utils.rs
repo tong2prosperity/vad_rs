@@ -28,23 +28,23 @@ impl From<SampleRate> for usize {
 pub struct VadParams {
     pub frame_size: usize,
     pub threshold: f32,
-    pub min_silence_duration_ms: usize,
-    pub speech_pad_ms: usize,
-    pub min_speech_duration_ms: usize,
+    pub silence_stop_ms: usize,
     pub max_speech_duration_s: f32,
     pub sample_rate: usize,
+    pub pre_speech_threshold_frame_cnt: usize,
+    pub speech_threshold_frame_cnt: usize,
 }
 
 impl Default for VadParams {
     fn default() -> Self {
         Self {
-            frame_size: 64,
+            frame_size: 32,
             threshold: 0.5,
-            min_silence_duration_ms: 0,
-            speech_pad_ms: 64,
-            min_speech_duration_ms: 64,
+            silence_stop_ms: 1200,
             max_speech_duration_s: f32::INFINITY,
             sample_rate: 16000,
+            pre_speech_threshold_frame_cnt: 1,
+            speech_threshold_frame_cnt: 1,
         }
     }
 }

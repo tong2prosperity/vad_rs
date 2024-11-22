@@ -43,8 +43,5 @@ fn main() {
     //     println!("Error: {}", res.err().unwrap());
     // }
 
-    for timestamp in vad_iterator.speeches() {
-        println!("{}", timestamp);
-    }
     println!("Finished.");
 }

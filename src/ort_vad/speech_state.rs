@@ -38,8 +38,8 @@ impl StreamState {
             temp_silence_cnt: 0,
             silence_threshold_cnt: 0,
             speech_cnt: 0,
-            pre_speech_threshold_cnt: 1,
-            speech_threshold_cnt: 1,
+            pre_speech_threshold_cnt: params.pre_speech_threshold_frame_cnt as u32,
+            speech_threshold_cnt: params.speech_threshold_frame_cnt as u32,
             last_speech_ms: 0.0,
             current_speech: utils::TimeStamp::default(),
             speeches: Vec::new(),
@@ -114,6 +114,7 @@ impl StreamState {
                     // 重新开始说话
                     self.speech_state = SpeechState::Speaking;
                     self.speech_cnt += 1;
+                    self.temp_silence_cnt = 0;
                 } else {
                     // 继续静音
                     self.temp_silence_cnt += 1;
