@@ -1,6 +1,6 @@
 use crate::ort_vad::{silero, utils};
 
-use super::speech_state::StreamState;
+use super::speech_state::{SpeechState, StreamState};
 
 const DEBUG_SPEECH_PROB: bool = false;
 #[derive(Debug)]
@@ -22,32 +22,23 @@ pub enum VadState {
 impl VadIter {
     pub fn new(silero: silero::Silero, params: utils::VadParams) -> Self {
         let p = Params::from(params);
-        let s_state =  StreamState::new(&p);
+        let s_state = StreamState::new(&p);
         Self {
             silero,
             params: p,
             state: State::new(),
-            stream_state: s_state
+            stream_state: s_state,
         }
     }
 
-    pub fn process(&mut self, samples: &[i16]) -> Result<VadState, ort::Error> {
-            let speech_prob: f32 = self.silero.calc_level(samples)?;
-            self.stream_state.update(&self.params, speech_prob);
-            self.state.update(&self.params, speech_prob);
-        
-        Ok(self.state.res)
+    pub fn process(&mut self, samples: &[i16]) -> Result<SpeechState, ort::Error> {
+        let speech_prob: f32 = self.silero.calc_level(samples)?;
+        let state = self.stream_state.update(&self.params, speech_prob);
+        Ok(state)
     }
 
     pub fn speeches(&self) -> &[utils::TimeStamp] {
         &self.state.speeches
-    }
-}
-
-impl VadIter {
-    fn reset_states(&mut self) {
-        self.silero.reset();
-        self.state = State::new()
     }
 }
 
@@ -147,7 +138,7 @@ impl State {
                 self.triggered = true;
                 self.current_speech.start =
                     self.current_sample as i64 - params.frame_size_samples as i64;
-            }else {
+            } else {
                 self.res = VadState::Speaking;
             }
             return;
@@ -177,7 +168,9 @@ impl State {
             }
             return;
         }
-        if speech_prob >= (params.speech_threshold - 0.15) && (speech_prob < params.speech_threshold) {
+        if speech_prob >= (params.speech_threshold - 0.15)
+            && (speech_prob < params.speech_threshold)
+        {
             if self.triggered {
                 self.res = VadState::Speaking;
                 self.debug(speech_prob, params, "speaking")
@@ -207,11 +200,11 @@ impl State {
                     self.temp_end = 0;
                     self.triggered = false;
                     self.res = VadState::End;
-                }else {
+                } else {
                     self.res = VadState::Speaking;
                 }
             }
-            return
+            return;
         }
 
         if !self.triggered {
@@ -260,9 +253,14 @@ impl State {
 
         if speech_prob > params.speech_threshold {
             self.handle_speech_start(params, speech_prob);
-        } else if self.triggered && (self.current_sample as i64 - self.current_speech.start) as f32 > params.max_speech_samples {
+        } else if self.triggered
+            && (self.current_sample as i64 - self.current_speech.start) as f32
+                > params.max_speech_samples
+        {
             self.handle_speech_end(params);
-        } else if speech_prob >= (params.speech_threshold - 0.15) && speech_prob < params.speech_threshold {
+        } else if speech_prob >= (params.speech_threshold - 0.15)
+            && speech_prob < params.speech_threshold
+        {
             self.handle_speaking_or_silence(speech_prob, params);
         } else if self.triggered && speech_prob < (params.speech_threshold - 0.15) {
             self.handle_speech_end_with_silence(params, speech_prob);
@@ -275,14 +273,17 @@ impl State {
         if self.temp_end != 0 {
             self.temp_end = 0;
             if self.next_start < self.prev_end {
-                self.next_start = self.current_sample.saturating_sub(params.frame_size_samples);
+                self.next_start = self
+                    .current_sample
+                    .saturating_sub(params.frame_size_samples);
             }
         }
         if !self.triggered {
             self.debug(speech_prob, params, "start");
             self.res = VadState::Start;
             self.triggered = true;
-            self.current_speech.start = self.current_sample as i64 - params.frame_size_samples as i64;
+            self.current_speech.start =
+                self.current_sample as i64 - params.frame_size_samples as i64;
         } else {
             self.res = VadState::Speaking;
         }
@@ -325,12 +326,15 @@ impl State {
         if self.temp_end == 0 {
             self.temp_end = self.current_sample;
         }
-        if self.current_sample.saturating_sub(self.temp_end) > params.min_silence_samples_at_max_speech {
+        if self.current_sample.saturating_sub(self.temp_end)
+            > params.min_silence_samples_at_max_speech
+        {
             self.prev_end = self.temp_end;
         }
         if self.current_sample.saturating_sub(self.temp_end) >= params.min_silence_samples {
             self.current_speech.end = self.temp_end as _;
-            if self.current_speech.end - self.current_speech.start > params.min_speech_samples as _ {
+            if self.current_speech.end - self.current_speech.start > params.min_speech_samples as _
+            {
                 self.take_speech();
                 self.prev_end = 0;
                 self.next_start = 0;

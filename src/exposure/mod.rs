@@ -1,11 +1,12 @@
 pub mod model;
 use std::ffi::c_long;
+use crate::ort_vad::speech_state::SpeechState;
 //use std::os::raw::c_long;
 use crate::ort_vad::{silero::Silero, utils::VadParams};
 use crate::ort_vad::utils::SampleRate;
 use crate::ort_vad::vad_iter::{VadIter, VadState};
 use std::{collections::HashMap, sync::{Arc, Mutex}};
-
+use log::debug;
 
 #[repr(C)]
 pub struct VadRes {
@@ -68,20 +69,7 @@ pub fn process_vad_iter(handle: c_long, samples: &[i16]) -> VadRes {
     if let Some(vad_iter) = map.get_mut(&handle) {
         match vad_iter.process(samples) {
             Ok(v_state) => {
-                match v_state {
-                    VadState::Silence => {
-                        res.talk_state = 0;
-                    }
-                    VadState::Start => {
-                        res.talk_state = 1;
-                    }
-                    VadState::Speaking => {
-                        res.talk_state = 2;
-                    }
-                    VadState::End => {
-                        res.talk_state = 3;
-                    }
-                }
+                res.talk_state = v_state as i32;
             }
             Err(e) => {
                 res.err_code = -2;
@@ -95,11 +83,16 @@ pub fn process_vad_iter(handle: c_long, samples: &[i16]) -> VadRes {
     res
 }
 
-
 pub fn init_vad_iter(param_str: &str) -> c_long {
     let mut param : VadParams = VadParams::default();
     if !param_str.is_empty() {
-        param = serde_json::from_str(param_str).unwrap();
+
+        match serde_json::from_str(param_str) {
+            Ok(p) => param = p,
+            Err(e) => {
+                debug!("Error parsing JSON: {}", e);
+            }
+        }
     }
     let silero = Silero::new(SampleRate::SixteenkHz, "").unwrap();
     let vad_iter = VadIter::new(silero, param);

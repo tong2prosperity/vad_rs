@@ -49,8 +49,6 @@ pub extern "C" fn process_audio_apple(audio_data: *const i16, audio_len: usize) 
 #[cfg(any(target_os = "ios", target_os = "macos"))]
 #[no_mangle]
 pub extern "C" fn init_vad_iter_apple(param_str: *const c_char) -> c_long {
-    
-
     let param_str = unsafe { std::ffi::CStr::from_ptr(param_str) }.to_string_lossy().into_owned();
     init_vad_iter(&param_str) 
 }
@@ -81,6 +79,6 @@ mod tests {
 
     #[test]
     fn it_works() {
-        
+
     }
 }

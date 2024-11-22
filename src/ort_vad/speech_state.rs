@@ -2,6 +2,7 @@ use std::u32;
 
 use super::{utils, vad_iter::Params};
 
+#[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum SpeechState {
     Silent,        // 初始静音状态

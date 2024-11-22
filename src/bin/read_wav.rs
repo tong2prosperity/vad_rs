@@ -32,13 +32,7 @@ fn main() {
         let res = vad_iterator.process(audio_frame);
         match res {
             Ok(state) => {
-                if state == vad_iter::VadState::Start {
-                    println!("Start");
-                } else if state == vad_iter::VadState::Speaking {
-                    //println!("Speaking");
-                } else if state == vad_iter::VadState::End {
-                    println!("End");
-                }
+                println!("Current state is {:?}", state);
             },
             Err(e) => println!("Error: {}", e),
         }
