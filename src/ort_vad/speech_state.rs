@@ -36,7 +36,7 @@ impl StreamState {
             sample_per_frame: params.frame_size_samples as u32,
             speech_state: SpeechState::Silent,
             temp_silence_cnt: 0,
-            silence_threshold_cnt: 0,
+            silence_threshold_cnt: params.silence_stop_frame_cnt as u32,
             speech_cnt: 0,
             pre_speech_threshold_cnt: params.pre_speech_threshold_frame_cnt as u32,
             speech_threshold_cnt: params.speech_threshold_frame_cnt as u32,

@@ -27,21 +27,27 @@ fn main() {
         ..Default::default()
     };
     let mut vad_iterator = vad_iter::VadIter::new(silero, vad_params);
+    let mut last_state = speech_state::SpeechState::Silent;
 
-    for audio_frame in content.chunks_exact(vad_iterator.params.frame_size_samples) {
-        let res = vad_iterator.process(audio_frame);
-        match res {
+    let sample_rate = 16000;
+
+    for (i, audio_frame) in content.chunks_exact(vad_iterator.params.frame_size_samples).enumerate() {
+        // 计算当前音频时间 (秒)
+        let current_audio_time = i as f32* 0.032;
+        
+        match vad_iterator.process(audio_frame) {
             Ok(state) => {
-                println!("Current state is {:?}", state);
+                if state == speech_state::SpeechState::Speaking && last_state != state {
+                    println!("开始说话 - 状态: {:?}, 音频时间: {:.3}秒", state, current_audio_time);
+                } else if state == speech_state::SpeechState::StopSpeaking && last_state != state {
+                    println!("结束说话 - 状态: {:?}, 音频时间: {:.3}秒", state, current_audio_time);
+                }
+                last_state = state;
             },
-            Err(e) => println!("Error: {}", e),
+            Err(e) => println!("错误: {}", e),
         }
     }
 
-    // let res = vad_iterator.process(&content);
-    // if res.is_err() {
-    //     println!("Error: {}", res.err().unwrap());
-    // }
-
-    println!("Finished.");
+    let total_audio_duration = content.len() as f32 / sample_rate as f32;
+    println!("处理完成。音频总时长: {:.3}秒", total_audio_duration);
 }
