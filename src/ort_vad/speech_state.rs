@@ -22,8 +22,8 @@ pub struct StreamState {
     last_speech_ms: f32,        // 记录上一次说话时长 count by ms
     current_speech: utils::TimeStamp,
     speeches: Vec<utils::TimeStamp>,
-    pre_speech_threshold_cnt: u32, // 多少次连续说话才能认为是要开始了 设定后不可改
-    speech_threshold_cnt: u32,     // 多少次连续说话才能认为是要开始了 设定后不可改
+    pre_speech_threshold_cnt: u32, // 多少次连续说话才能认为是要说话了 设定后不可改
+    speech_threshold_cnt: u32,     // 多少次连续说话才能认为是真正说话了 设定后不可改
 
     speech_threshold: f32,   // 设定后不可改
     low_prob_threshold: f32, // 设定后不可改

@@ -1,17 +1,22 @@
 [package]
-name = "rust_vad"
+name = "vad_rs"
 version = "0.1.0"
 edition = "2021"
+
 
 [[bin]]
 name = "read_wav"
 path = "src/bin/read_wav.rs"
 
 [lib]
-crate-type = ["rlib"]
+crate-type = ["staticlib"]
+
+[target.'cfg(target_os = "ios")'.lib]
+crate-type = ["staticlib"]
 
 [dependencies]
-ort = {version = "=2.0.0-rc.5", features = ["ndarray"]}#, default_features = false}
+ort-sys = {version = "=2.0.0-rc.8"}
+ort = {version = "=2.0.0-rc.8", features = ["ndarray"]}
 ndarray = "0.16"
 hound = "3"
 lazy_static = "1.5.0"

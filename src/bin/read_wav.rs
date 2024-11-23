@@ -1,4 +1,4 @@
-use rust_vad::ort_vad::*;
+use vad_rs::ort_vad::*;
 
 fn main() {
 
@@ -24,6 +24,7 @@ fn main() {
     let silero = silero::Silero::new(sample_rate, "").unwrap();
     let vad_params = utils::VadParams {
         sample_rate: sample_rate.into(),
+        silence_stop_ms: 128,
         ..Default::default()
     };
     let mut vad_iterator = vad_iter::VadIter::new(silero, vad_params);
