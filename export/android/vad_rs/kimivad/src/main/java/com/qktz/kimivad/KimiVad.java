@@ -8,5 +8,7 @@ public class KimiVad {
 
     public static native long init_vad_iter(String params);
     public static native long process_vad_iter(long handle, byte[] audioData);
+
+    public static native long cleanup_vad_iter(long handle);
     
 }

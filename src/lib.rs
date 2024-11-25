@@ -2,7 +2,7 @@ pub mod exposure;
 pub mod ort_vad;
 pub mod util;
 
-use crate::exposure::{init_silero, process_audio, VadRes, init_vad_iter, process_vad_iter};
+use crate::exposure::{init_silero, process_audio, VadRes, init_vad_iter, process_vad_iter, cleanup_vad_iter};
 use std::ffi::c_long;
 
 #[cfg(target_os = "android")]
@@ -40,6 +40,12 @@ pub extern "system" fn Java_com_qktz_kimivad_KimiVad_process_1vad_1iter<'a>(env:
     real_res
 }
 
+#[cfg(target_os = "android")]
+#[no_mangle]
+pub extern "system" fn Java_com_qktz_kimivad_KimiVad_cleanup_1vad_1iter<'a>(env: JNIEnv<'a>, _: JClass, handle: jlong) {
+    cleanup_vad_iter(handle);
+}
+
 
 #[cfg(any(target_os = "ios", target_os = "macos"))]
 #[no_mangle]
@@ -73,9 +79,6 @@ pub extern "C" fn process_vad_iter_apple(handle: c_long, audio_data: *const i16,
 #[cfg(any(target_os = "ios", target_os = "macos"))]
 #[no_mangle]
 pub extern "C" fn cleanup_vad_iter_apple(handle: c_long) {
-    use exposure::cleanup_vad_iter;
-
-    
     cleanup_vad_iter(handle);
 }
 

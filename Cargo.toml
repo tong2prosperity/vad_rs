@@ -9,7 +9,7 @@ name = "read_wav"
 path = "src/bin/read_wav.rs"
 
 [lib]
-crate-type = ["staticlib"]
+crate-type = ["cdylib"]
 
 # [build]
 # rustflags = [ "-v" ]
@@ -22,8 +22,8 @@ crate-type = ["staticlib"]
 
 [dependencies]
 ort-sys = {version = "=2.0.0-rc.8"}
-ort = {version = "=2.0.0-rc.8", features = ["ndarray", "half","coreml"], default-features = false} #for ios
-#ort = {version = "=2.0.0-rc.8", features = ["ndarray","half"], default-features = false} # android
+#ort = {version = "=2.0.0-rc.8", features = ["ndarray", "half","coreml"], default-features = false} #for ios
+ort = {version = "=2.0.0-rc.8", features = ["ndarray","half"], default-features = false} # android
 ndarray = "0.16"
 hound = "3"
 lazy_static = "1.5.0"

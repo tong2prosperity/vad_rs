@@ -14,6 +14,7 @@ fn main() {
         ("macos", _) => "deps/darwin",
         ("ios", "aarch64") => "deps/ios",
         ("ios-sim", "aarch64") => "deps/ios_sim",  // iOS 模拟器
+        ("android", "aarch64") => "deps/android-arm64",
         _ => panic!("Unsupported platform: {} {}", target_os, target_arch),
     };
 
