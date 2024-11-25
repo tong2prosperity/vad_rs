@@ -7,10 +7,19 @@ android {
     compileSdk 34
 
     defaultConfig {
-        minSdk 28
+        minSdk 29
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
+        ndk {
+            abiFilter 'arm64-v8a'
+        }
+
+        sourceSets {
+            main {
+                jniLibs.srcDirs = ['src/main/jniLibs']
+            }
+        }
     }
 
     buildTypes {
@@ -23,6 +32,7 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    ndkVersion '26.1.10909125'
 }
 
 dependencies {
@@ -32,4 +42,6 @@ dependencies {
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
+
+    implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.20.0'
 }

@@ -54,7 +54,7 @@ impl Silero {
         let session = if model_path.as_ref().exists() {
             ort::Session::builder()?.commit_from_file(model_path)?
         } else {
-            let providers = vec![ort::ExecutionProviderDispatch::CpuExecutionProvider(ort::NNAPIExecutionProvider::default().build())];
+            let providers = vec![ort::NNAPIExecutionProvider::default().build()];
             let model_bytes = crate::exposure::model::get_model();
             ort::Session::builder()?
             .with_execution_providers(providers)?

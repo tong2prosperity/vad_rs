@@ -1,0 +1,1 @@
+export RUSTC_LOG=rustc_codegen_ssa::back::link=info # 可以输出详细信息

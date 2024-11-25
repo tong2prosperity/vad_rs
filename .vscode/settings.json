@@ -1,0 +1,4 @@
+{
+    "rust-analyzer.server.path": null,
+    "rust-analyzer.cargo.allTargets": true
+}

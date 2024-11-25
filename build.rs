@@ -5,7 +5,6 @@ fn main() {
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
     let target_arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
 
-
     // print the platform info
     println!("cargo::warning=target_os: {}", target_os);
     println!("cargo::warning=target_arch: {}", target_arch);
@@ -24,13 +23,24 @@ fn main() {
     let current_dir = std::env::current_dir().unwrap();
     println!("cargo::warning=current_dir: {}", current_dir.display());
     //println!("cargo::rustc-link-search={}", current_dir.join(lib_path).display());
-    println!("cargo:rustc-link-arg=-framework");
-    println!("cargo:rustc-link-arg=CoreML");
+
     // println!("cargo:rustc-link-arg=-framework");
     // println!("cargo:rustc-link-arg=CoreFoundation");
     // println!("cargo:rustc-link-arg=-framework");
     // println!("cargo:rustc-link-arg=Metal");
     // println!("cargo:rustc-link-arg=-framework");
     // println!("cargo:rustc-link-arg=Accelerate");
-    println!("cargo::rustc-link-lib=static=onnxruntime");
+    if target_os == "ios" {
+        println!("cargo::rustc-link-lib=static=onnxruntime");
+        println!("cargo:rustc-link-arg=-fapple-link-rtlib");
+        println!("cargo:rustc-link-arg=-framework");
+        println!("cargo:rustc-link-arg=CoreML");
+    }
+
+    if target_os == "android" {
+        println!("cargo::rustc-link-search=native=./deps/android-arm64");
+        println!("cargo:rustc-link-lib=dylib=onnxruntime");
+    }
+
+    println!("cargo:rustc-link-arg=-v");
 }

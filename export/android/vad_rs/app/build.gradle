@@ -7,8 +7,8 @@ android {
     compileSdk 34
 
     defaultConfig {
-        minSdk 28
-        targetSdk 29
+        minSdk 29
+        targetSdk 34
         versionCode 1
         versionName "1.0"
 
@@ -30,12 +30,12 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    externalNativeBuild {
-        cmake {
-            path file('src/main/cpp/CMakeLists.txt')
-            version '3.22.1'
-        }
-    }
+    //externalNativeBuild {
+//        cmake {
+  //          path file('src/main/cpp/CMakeLists.txt')
+    //        version '3.22.1'
+      //  }
+    //}
     buildFeatures {
         viewBinding true
     }
@@ -46,6 +46,7 @@ dependencies {
     implementation libs.appcompat
     implementation libs.material
     implementation libs.constraintlayout
+    implementation project(':kimivad')
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core

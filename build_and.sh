@@ -1,0 +1,1 @@
+ORT_LIB_LOCATION=./deps/android-arm64/ cargo ndk -t arm64-v8a  build --release --lib
