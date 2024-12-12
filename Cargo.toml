@@ -9,7 +9,7 @@ name = "read_wav"
 path = "src/bin/read_wav.rs"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 # [build]
 # rustflags = [ "-v" ]
